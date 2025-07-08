@@ -1,0 +1,1 @@
+ 18:30:38  <<DASUNG 25.3>>   /home/gab42/appszin/ds/PaperlikeEinkM/ds253 /dev/ttyUSB0 -s 3
