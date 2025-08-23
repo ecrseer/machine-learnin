@@ -7,7 +7,6 @@ from sklearn import preprocessing, model_selection, neighbors, metrics
 from sklearn.feature_extraction import text
 
 
-
 # questao 1:Criação das features:
 def baixar_csv_github(url):
     print(f"Baixando arquivo de {url}...")
@@ -58,15 +57,11 @@ def vetorizar(vetorizador, atributo):
     return atributo_vec_df
 
 
-
 df = obter_dataset_noticias()
-
-
 
 print("Definindo os modelos KNN...")
 # questao 2: Modelagem de K-Nearest Neighbors (KNN): 
-knn = neighbors.KNeighborsClassifier(n_neighbors=10)
-knns = [neighbors.KNeighborsClassifier(n_neighbors=k) for k in [10, 50, 100]]
+knns = [neighbors.KNeighborsClassifier(n_neighbors=k) for k in [1, 2, 3,7,10,14,30,42]]
 
 print("bag of words (BoW)")
 atributos_bow = vetorizar(text.CountVectorizer(), df['mensagem'])
@@ -76,26 +71,18 @@ print("TF-IDF")
 atributos_tfidf = vetorizar(text.TfidfVectorizer(), df['mensagem'])
 classe_tfidf = df['classe']
 
+
 def classificar(modelo, atributos, classe):
-    treino_a, teste_a, treino_c, teste_c = model_selection.train_test_split(atributos, classe, train_size=0.8)
+    treino_a, teste_a, treino_c, teste_c = model_selection.train_test_split(
+        atributos, classe, train_size=0.8
+    )
     modelo.fit(treino_a, treino_c)
     previstos = modelo.predict(teste_a)
     return treino_a, teste_a, treino_c, teste_c, previstos, modelo
 
-
-treino_a, teste_a, treino_c, teste_c, previstos, modelo = classificar(knn, atributos_tfidf, classe_tfidf)
-
-
+# questao 4: Avaliação de Classificadores Binários:
 class ClassificaBinario:
-    def __init__(self, modelo, treino_a, treino_c, teste_a, teste_c, previstos):
-        self.modelo = modelo
-        self.treino_a = treino_a
-        self.treino_c = treino_c
-        self.teste_a = teste_a
-        self.teste_c = teste_c
-        self.previstos = previstos
-        
-    # questao 4: Avaliação de Classificadores Binários:
+    @staticmethod
     def calcula_precisao_recall_f1score(y_true, y_pred):
         acuracia = metrics.accuracy_score(y_true, y_pred)
         precisao = metrics.precision_score(y_true, y_pred, zero_division=0)
@@ -103,10 +90,7 @@ class ClassificaBinario:
         f1score = metrics.f1_score(y_true, y_pred)
         return acuracia, precisao, recall, f1score
 
-
-    acuracia, precisao, recall, f1score = calcula_precisao_recall_f1score(teste_c, previstos)
-
-
+    @staticmethod
     def calcula_acuracia_especificidade(y_true, y_pred):
         acuracia = metrics.accuracy_score(y_true, y_pred)
         mc = metrics.confusion_matrix(y_true, y_pred)
@@ -115,21 +99,8 @@ class ClassificaBinario:
         sensibilidade = TP / (TP + FN)
         return acuracia, especificidade, sensibilidade
 
-
-    _, especificidade, sensibilidade = calcula_acuracia_especificidade(teste_c, previstos)
-
-    print("\n=== Resultados do Modelo ===")
-    print("Acurácia       :", round(acuracia, 4))
-    print("Precisão      :", round(precisao, 4))
-    print("Recall        :", round(recall, 4))
-    print("F1-Score      :", round(f1score, 4))
-    print("Sensibilidade :", round(sensibilidade, 4))
-    print("Especificidade:", round(especificidade, 4))
-
-    probabilidades = modelo.predict_proba(teste_a)[:, 1]
-
-
-    def plotar_roc(y_true, y_prob):
+    @staticmethod
+    def plotar_roc(y_true, y_prob, titulo="Curva ROC"):
         fpr, tpr, _ = metrics.roc_curve(y_true, y_prob)
         roc_auc = metrics.auc(fpr, tpr)
         plt.figure(figsize=(7, 5))
@@ -137,14 +108,29 @@ class ClassificaBinario:
         plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
         plt.xlabel("Falso Positivo")
         plt.ylabel("Verdadeiro Positivo")
-        plt.title("Curva ROC")
+        plt.title(titulo)
         plt.legend(loc="lower right")
         plt.show()
 
 
-    plotar_roc(teste_c, probabilidades)
+
+for modelo_knn in knns:
+    print(f"\n\n=== Avaliando KNN com k={modelo_knn.n_neighbors} ===")
+    treino_a, teste_a, treino_c, teste_c, previstos, modelo = classificar(
+        modelo_knn, atributos_tfidf, classe_tfidf
+    )
+
+    acuracia, precisao, recall, f1score = ClassificaBinario.calcula_precisao_recall_f1score(teste_c, previstos)
+    _, especificidade, _recal = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
+
+    print("Acurácia       :", round(acuracia, 4))
+    print("Precisão      :", round(precisao, 4))
+    print("Recall        :", round(recall, 4))
+    print("F1-Score      :", round(f1score, 4))
+    print("Especificidade:", round(especificidade, 4))
+
+    probabilidades = modelo.predict_proba(teste_a)[:, 1]
+    ClassificaBinario.plotar_roc(teste_c, probabilidades, titulo=f"Curva ROC (k={modelo_knn.n_neighbors})")
 
 #Questao 5: Baseado nos valores encontrados para as diferentes figuras de mérito,
 #  interprete os resultados e disserte sobre a eficiência do classificador criado.
-
-
