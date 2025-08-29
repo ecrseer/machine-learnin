@@ -2,13 +2,11 @@ import pandas as pd
 import requests
 from io import StringIO
 import matplotlib.pyplot as plt
-from sklearn import preprocessing, model_selection, decomposition, tree, metrics
+from sklearn import preprocessing, decomposition, tree, metrics
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
 
-# ==============================
-# 0. Download dos dados Sonar
-# ==============================
+
 def baixar_csv_github(url):
     print(f"Baixando arquivo de {url}...")
     if 'github.com' in url and '/blob/' in url:
@@ -27,17 +25,18 @@ df = baixar_csv_github(url_sonar)
 
 X = df.iloc[:, :-1]
 y = preprocessing.LabelEncoder().fit_transform(df.iloc[:, -1])
-
+ 
 treino_a, teste_a, treino_c, teste_c = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# ==============================
-# 1. PCA aplicado ao KNN
-# ==============================
-pca = decomposition.PCA(n_components=0.95)  # mantém 95% da variância
-X_pca = pca.fit_transform(X)
-ptreino_a, pteste_a, ptreino_c, pteste_c = train_test_split(X_pca, y, test_size=0.2, random_state=42)
-
-# ============================== 
+# 
+# questao 1. PCA aplicado ao KNN
+#  
+pca = decomposition.PCA(n_components=0.95)  
+ptreino_a = pca.fit_transform(treino_a)
+pteste_a = pca.transform(teste_a) 
+ptreino_c = treino_c
+pteste_c = teste_c
+ 
 class ClassificaBinario:
     @staticmethod
     def calcula_precisao_recall_f1score(y_true, y_pred):
@@ -68,70 +67,58 @@ class ClassificaBinario:
         plt.title(titulo)
         plt.legend(loc="lower right")
         plt.show()
+
+    @staticmethod
     def imprimir_resultados(nome_modelo, teste_c, previstos):
         print(f"\nResultados do modelo: {nome_modelo}")
-
         acuracia, precisao, recall, f1score = ClassificaBinario.calcula_precisao_recall_f1score(teste_c, previstos)
-        _, especificidade, _ = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
+        _, especificidade, sensibilidade = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
 
-        print(f"Acurácia: {acuracia:.4f}")
-        print(f"Precisão: {precisao:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1-Score: {f1score:.4f}")
-        print(f"Especificidade: {especificidade:.4f}")
+        print(f"Acurácia       : {acuracia:.4f}")
+        print(f"Precisão       : {precisao:.4f}")
+        print(f"Recall         : {recall:.4f}")
+        print(f"F1-Score       : {f1score:.4f}")
+        print(f"Especificidade : {especificidade:.4f}")
+        print(f"Sensibilidade  : {sensibilidade:.4f}")
 
-# ==============================
-# 1. PCA aplicado ao KNN
-# ==============================
-pca = decomposition.PCA(n_components=0.95)  # mantém 95% da variância
-X_pca = pca.fit_transform(X)
+ 
 
-ptreino_a, pteste_a, ptreino_c, pteste_c = train_test_split(X_pca, y, test_size=0.2, random_state=42)
 
+knnSemPca = KNeighborsClassifier(n_neighbors=5)
+knnSemPca.fit(treino_a, treino_c)
+previstos = knnSemPca.predict(teste_a)
+
+print("\n Avaliação do KNN sem PCA")
+ClassificaBinario.imprimir_resultados("KNN sem pca",teste_c,previstos)
+probabilidades = knnSemPca.predict_proba(teste_a)[:, 1]
+ClassificaBinario.plotar_roc(teste_c, probabilidades, titulo="Curva ROc KNN sem pca")
+
+ 
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(ptreino_a, ptreino_c)
 previstos = knn.predict(pteste_a)
 
-print("\n=== Avaliação do KNN com PCA (95% variância) ===")
+print("\n Avaliação do KNN com PCA (95% variância) ")
+ClassificaBinario.imprimir_resultados("KNN com pca",pteste_c,previstos)
+probabilidades = knn.predict_proba(pteste_a)[:, 1]
+ClassificaBinario.plotar_roc(pteste_c, probabilidades, titulo="Curva ROc KNN com PCA")
 
-
-acuracia, precisao, recall, f1score = ClassificaBinario.calcula_precisao_recall_f1score(teste_c, previstos)
-_, especificidade, _ = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
-
-print("Acurácia       :", round(acuracia, 4))
-print("Precisão      :", round(precisao, 4))
-print("Recall        :", round(recall, 4))
-print("F1-Score      :", round(f1score, 4))
-print("Especificidade:", round(especificidade, 4))
-
-probabilidades = knn.predict_proba(teste_a)[:, 1]
-ClassificaBinario.plotar_roc(teste_c, probabilidades, titulo="Curva ROC - KNN com PCA")
-
-# ==============================
-# 2. Árvore de Decisão
-# ==============================
-treino_a, teste_a, treino_c, teste_c = train_test_split(X, y, test_size=0.2, random_state=42)
+# 
+# questao 2. Árvore de Decisão  
 
 decision_tree = tree.DecisionTreeClassifier(random_state=42)
 decision_tree.fit(treino_a, treino_c)
 previstos = decision_tree.predict(teste_a)
 
-print("\n=== Avaliação da Árvore de Decisão (sem ajuste) ===")
-acuracia, precisao, recall, f1score = ClassificaBinario.calcula_precisao_recall_f1score(teste_c, previstos)
-_, especificidade, _ = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
-
-print("Acurácia       :", round(acuracia, 4))
-print("Precisão      :", round(precisao, 4))
-print("Recall        :", round(recall, 4))
-print("F1-Score      :", round(f1score, 4))
-print("Especificidade:", round(especificidade, 4))
+ClassificaBinario.imprimir_resultados("Arvore decisao",teste_c,previstos)
 
 probabilidades = decision_tree.predict_proba(teste_a)[:, 1]
 ClassificaBinario.plotar_roc(teste_c, probabilidades, titulo="Curva ROC - Árvore de Decisão")
 
-# ==============================
-# 3. GridSearch na Árvore de Decisão
-# ==============================
+# 
+# questao 4. Busca Hiperparamétrica: 
+# Utilizar GridSearch para otimizar os hiperparâmetros dos modelos.
+
 param_grid = {
     "criterion": ["gini", "entropy", "log_loss"],
     "max_depth": [None, 5, 10, 20],
@@ -139,6 +126,9 @@ param_grid = {
     "min_samples_leaf": [1, 2, 4]
 }
 
+# questao 5: Pruning de Árvores de Decisão
+# poda com param_grid.max_depth
+#
 grid_search = GridSearchCV(
     estimator=tree.DecisionTreeClassifier(random_state=42),
     param_grid=param_grid,
@@ -146,28 +136,42 @@ grid_search = GridSearchCV(
     scoring="accuracy",
     n_jobs=-1
 )
-
-grid_search.fit(X, y)
-
-print("\n=== Melhores hiperparâmetros encontrados ===")
+grid_search.fit(treino_a, treino_c)
+print("\n Melhores hiperparâmetros encontrados ")
 print(grid_search.best_params_)
-print("Melhor score:", grid_search.best_score_)
-#asd
+print("Melhor score (CV):", grid_search.best_score_)
 
 
+best_params = grid_search.best_params_
 arvore_ajustada = tree.DecisionTreeClassifier(**best_params, random_state=42)
 arvore_ajustada.fit(treino_a, treino_c)
 previstos = arvore_ajustada.predict(teste_a)
 
-print("\n=== Avaliação da Árvore de Decisão (ajustada pelo GridSearch) ===")
-acuracia, precisao, recall, f1score = ClassificaBinario.calcula_precisao_recall_f1score(teste_c, previstos)
-_, especificidade, _ = ClassificaBinario.calcula_acuracia_especificidade(teste_c, previstos)
+print("\n Avaliação da Árvore de Decisão  pelo GridSearch ")
 
-print("Acurácia       :", round(acuracia, 4))
-print("Precisão      :", round(precisao, 4))
-print("Recall        :", round(recall, 4))
-print("F1-Score      :", round(f1score, 4))
-print("Especificidade:", round(especificidade, 4))
+# questao 6 Avaliação de Classificadores Binários: 
+
+ClassificaBinario.imprimir_resultados("Árvore de decisao com gridsearch",teste_c, previstos)
 
 probabilidades = arvore_ajustada.predict_proba(teste_a)[:, 1]
 ClassificaBinario.plotar_roc(teste_c, probabilidades, titulo="Curva ROC - Árvore Ajustada (GridSearch)")
+
+
+## questao 7 Baseado nos valores encontrados para as 
+# diferentes figuras de mérito, interprete os resultados e disserte 
+# sobre a eficiência do classificador criado.
+"""
+Baseando-se nas métricas obtidas, o KNN com PCA perdeu em Precisão
+ que é em relaçao aos falsos positivos, nessa métrica
+ quanto mais falsos positivos pior será a precisão, assim
+ sendo Precisão é um indicativo que diz:
+dos positivos encontrados, quais realmente eram verdadeiramente positivos?
+ e no caso do código, caiu de 61% de precisão para 57%
+
+Já em relação à Àrvore de decisão tivemos um ganho enorme no Recall
+ que é em uma relação que usa os falsos negativos:
+ quanto mais falsos negativos significa que o recall deixou de encontrar positivos,
+ assim sendo recall diz: dos positivos encontrados, quantos foram acertados?
+ e no caso da Árvore de decisão passamos de 66% para 80%
+Todas as outras métricas também melhoraram, sendo o Recall a mais expressiva
+"""
