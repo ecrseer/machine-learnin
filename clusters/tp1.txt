@@ -1,0 +1,43 @@
+Explique com as suas palavras o que é e quais são os objetivos de uma tarefa de clusterização. Quais são suas vantagens e quais são suas maiores dificuldades?
+
+
+Clusterização é em essencia agrupar coisas, dentro do contexto de machine learning a clusterização tem como definição organizar elementos por similaridade, elementos que tenham alguma semelhança em seus dados que são a colunas e linhas. Dessa forma, a clusterização se baseia na distância construida a partir dos vetores que representam os elementos de dados e tem como objetivo ao realizar isso principalmente entender os agrupamentos que poderiam ser formados, identificando grupos e melhorando a interpretabilidade dos dados, além de identificar padrões importantes para o negócio. Assim sendo, é uma análise não supervisionada ou seja, ela pode surpreender ao gerar insights inesperados.
+
+#
+3.explique quais as situações em que o algoritmo k-means falha, ou seja, quais situações em que a tarefa executada pelo algoritmo não chega a agrupamentos satisfatórios, capazes de representar adequadamente os dados no dataset
+
+Uma das situações em que o algoritmo K means falha é na presença de muitos dados que são irrelevantes ou seja,outliers ou ruídos --- pertubações que afetam a concentração de dados em torno da média, isso dificulta formar núcleos na maioria dos algoritmos que visam capturar aspectos mais importantes dos dados originais como o K means.
+
+Além disso, outro caso em que o algoritmo K means é falho é quando o número de clusters definido não é razoável com o dataset, existe uma fragilidade do procedimento K Means em si que nesses casos o algoritmo não consegue formar insights relevantes.
+
+Outra situação em que o algoritmo K means falha é com dados espalhados ou seja que não são compactados, nesse caso o algoritmo k means geralmente falha, demonstrando um baixo coeficiente de silhueta, isso ocorre porque o algoritmo vetoriza seus agrupamentos com base no raio dos núcleos do centroide, comumente formando circulos. Um exemplo disso é o caso do make_moons que é um dataset artificial que é feito para simular dados espalhados que forma duas luas.
+
+
+#
+4.como o algoritmo k-means pode ser usado para a quantização vetorial. Ilustre sua explicação aplicando uma quantização sobre o dataset make_blobs
+
+A quantização vetorial trata de grandes espaços multidimensionais  reduzindo-os para um conjunto de dimensões um pouco menor, tornando-os computacionalmente mais "palatável" com objetivo de possibilitar tratar e agrupar todos eles individualmente. A separação de dados usando os centros de cluster como ponto de referência é a forma que o algoritmo K means pode ser usado para a quantização vetorial:
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
+from sklearn.cluster import KMeans
+
+# Criando dados artificiais
+X, y = make_blobs(n_samples=600, centers=5, random_state=42)
+
+# Aplicando K-Means para 5 clusters (quantização em 5 níveis)
+kmeans = KMeans(n_clusters=5, random_state=42)
+kmeans.fit(X)
+
+# Quantização: substituindo cada ponto pelo centroide mais próximo
+X_quantizado = kmeans.cluster_centers_[kmeans.predict(X)]
+
+# Visualizando
+plt.figure(figsize=(8,5))
+plt.scatter(X[:,0], X[:,1], c='lightgray', label='Original', alpha=0.5)
+plt.scatter(X_quantizado[:,0], X_quantizado[:,1], c='red', label='Quantizado', s=20)
+plt.scatter(kmeans.cluster_centers_[:,0], kmeans.cluster_centers_[:,1],
+            c='blue', marker='^', s=200, label='Centroides')
+plt.legend()
+plt.title("Quantização Vetorial com K-Means")
+plt.show()

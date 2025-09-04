@@ -1,0 +1,13 @@
+Descreva com suas palavras como funciona o método single linkage usado em algoritmos de clusterização.
+-
+
+em clusterização hierarquica nos agrupamentos bottom up uma das estratégias para agrupar é o single linkage 
+O single linkage funciona subtraindo a  distância entre dois clusters  e mesclando primeiramente aqueles que for menor, ou seja, quanto  mais semelhantes os membros forem mais cedo serão aglomerados.
+
+
+q3. Descreva com suas palavras como funciona o método ward linkage usado em algoritmos de clusterização.
+ 
+ Considerando ward linkage é um algoritmo de clusterização heirarquica bottom-up, que visa criar clusters como o single linkage, entretanto enquanto single linkage tem um olhar mais simples e intuitivo focando em clusters que possuem a menor distancia entre si, o ward linkage leva em consideração todo o cluster que será formado ao unir, preferindo criar clusters que possuam uma variancia menor ou seja, mais compactos entre si. 
+
+ q5.
+ o complete linkage é um algoritmo que une clusters baseando-se na menor distancia máxima entre seus membros, isto é, ele pega os membros de dois clusters que possuem a maior distancia entre si e subtrai, isso vai dar distancia (d), e calcula d para todas combinações de distancias máximas possiveis; onde D (distancia) for menor, ele irá aglomerar primeiro
